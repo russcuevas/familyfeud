@@ -23,7 +23,8 @@ void displayHowToPlay() {
     printf("1. The game consists of 5 questions in the main round.\n");
     printf("2. Players take turns, but after every incorrect answer, the turn switches to the other player.\n");
     printf("3. Each question has 3 possible answers, and each answer has points associated with it.\n");
-    printf("4. The player with the highest score after 5 questions will win the game.\n");
+    printf("4. The player with the highest score after 5 questions will move to the jackpot round.\n");
+    printf("5. In the jackpot round, the winner will answer 5 random questions and must score 150 points to win the jackpot\n");
     printf("\nPress any key to return to the main menu...\n");
     getchar();
     getchar();
@@ -53,20 +54,27 @@ void playGame() {
     printf("\n-- CHOOSE YOUR PREFERRED MODE TO BEGIN THE GAME --\n");
     printf("1] One Player\n");
     printf("2] Two Players\n");
-    printf("Select an option (1 or 2): ");
+    printf("\nSelect an option [1 or 2]: ");
     scanf("%d", &modeChoice);
 
     if (modeChoice == 1) {
-        printf("\nStarting the game in One Player mode...\n");
+        printf("\n-- ONE PLAYER --\n");
         int score = 0;
         score = playRound(1);  // Play the round for one player
-
-        printf("\nYour final score is: %d\n", score);
 
         // Check score and display appropriate message
         if (score < 150) {
             printf("\nYou have Lost.\n");
-        } else if (score >= 150 && score <= 349) {
+            char choice;
+            printf("Do you want to return to the main menu? (Y/N): ");
+            scanf(" %c", &choice);
+            if (choice == 'Y' || choice == 'y') {
+                return;
+            } else {
+                printf("\nGoodbye!\n");
+                exit(0);
+            }
+        } else if (score >= 150 && score <= 249) {
             printf("\nCongratulations, thank you for playing!\n");
             char choice;
             printf("Do you want to return to the main menu? (Y/N): ");
@@ -77,13 +85,26 @@ void playGame() {
                 printf("\nGoodbye!\n");
                 exit(0);
             }
-        } else if (score >= 350) {
-            printf("\nCongratulations! You've scored enough points to move on to the Jackpot Round!\n");
-            jackpotRound(); // Proceed to Jackpot round
+        } else if (score >= 250) {
+            printf("\n-- You got %d points --\n", score);
+            printf("1] Move to Jackpot Round\n");
+            printf("2] End the Game\n");
+
+            int choice;
+            printf("Select an option (1 or 2): ");
+            scanf("%d", &choice);
+
+            if (choice == 1) {
+                jackpotRound(score); // Pass the score from the main round to the Jackpot round
+            } else {
+                printf("\nYour total points are: %d\n", score);
+                printf("Returning to the main menu...\n");
+                getchar(); // To consume any remaining newline character
+            }
         }
 
     } else if (modeChoice == 2) {
-        printf("\nStarting the game in Two Player mode...\n");
+        printf("\n-- TWO PLAYER --\n");  // Add this line to indicate One Player mode
         int score1 = 0, score2 = 0;
         score1 = playRound(2);  // Play the round for player 1
         score2 = playRound(2);  // Play the round for player 2
@@ -133,21 +154,20 @@ int playRound(int mode) {
     int i, j, correct;
 
     for (i = 0; i < 5; i++) {
-        printf("\nQuestion %d: %s\n", i + 1, questions[i].question);
+        printf("\nQUESTION #%d\n", i + 1);
+        printf("%s\n", questions[i].question);
 
-        // Display only the answers, no points
+        // Looping displaying the answer with no points
         for (j = 0; j < 10 && questions[i].answers[j][0] != '\0'; j++) {
             printf("%s\n", questions[i].answers[j]);
         }
 
-        printf("Enter your guess: ");
+        printf("\nEnter your guess: ");
         
-
+		// Lowercase
         fflush(stdin);
         fgets(answer, sizeof(answer), stdin);
-        answer[strcspn(answer, "\n")] = 0;  // Remove newline character from input
-
-        // Normalize the answer to lowercase before comparing
+        answer[strcspn(answer, "\n")] = 0; 
         normalizeString(answer);
 
         // Check for the special case in question 2 for the age range 25-34 or 35-44
@@ -189,7 +209,6 @@ int playRound(int mode) {
                 printf("Invalid input. Please enter a valid age.\n");
             }
         } else {
-            // Handle all other questions as usual
             correct = 0;
             for (j = 0; j < 10; j++) {
                 char correctAnswer[50];
@@ -206,17 +225,19 @@ int playRound(int mode) {
             }
 
             if (!correct) {
-                printf("Invalid choice. Please choose one of the available options.\n");
+                printf("Wrong 0 points\n");
             }
         }
     }
 
-    printf("\nTotal score for this round: %d\n", totalScore);
+    printf("\nTotal score for this round: %d points.", totalScore);
     return totalScore;
 }
 
 // Jackpot Round Function
-int jackpotRound() {
+int jackpotRound(int mainRoundScore) {
+	printf("\n-- JACKPOT ROUND --\n");
+	
     Question jackpotQuestions[] = {
         {"What is the largest planet in our solar system?", 
          {"Jupiter", "Saturn", "Mars", "Earth", "Venus"},
@@ -235,21 +256,22 @@ int jackpotRound() {
     char answer[50];
     int i, j, correct;
 
+    // Looping jackpot round questions
     for (i = 0; i < 3; i++) {
-        printf("\nJackpot Question %d: %s\n", i + 1, jackpotQuestions[i].question);
-
-        // Display only the answers
+        printf("\nJACKPOT QUESTION #%d\n", i + 1);
+        printf("%s\n", jackpotQuestions[i].question);
+        
+        // Looping displaying the answer with no points
         for (j = 0; j < 5 && jackpotQuestions[i].answers[j][0] != '\0'; j++) {
             printf("%s\n", jackpotQuestions[i].answers[j]);
         }
 
-        printf("Enter your guess: ");
+        printf("\nEnter your guess: ");
         
+		// Lowercase        
         fflush(stdin);
         fgets(answer, sizeof(answer), stdin);
-        answer[strcspn(answer, "\n")] = 0;  // Remove newline character from input
-
-        // Normalize the answer to lowercase before comparing
+        answer[strcspn(answer, "\n")] = 0; 
         normalizeString(answer);
 
         correct = 0;
@@ -268,20 +290,42 @@ int jackpotRound() {
         }
 
         if (!correct) {
-            printf("Invalid choice. Please choose one of the available options.\n");
+            printf("Wrong 0 points\n");
         }
     }
 
-    printf("\nTotal Jackpot score: %d\n", jackpotScore);
-    if (jackpotScore >= 500) {
-        printf("\nCongratulations! You've won the Jackpot!\n");
+    if (jackpotScore >= 150) {
+        printf("\n'JACKPOT', You got a total of %d points.\n", mainRoundScore);
+        printf("Congratulations!\n");
     } else {
-        printf("\nSorry, you did not win the Jackpot this time.\n");
+        printf("\nWhat an amazing run, you got %d points.\n", jackpotScore);
+        printf("You'll get the jackpot prize next time!\n");
+    }
+
+	printf("\nOverall score thankyou for playing!!\n");
+	printf("Jackpot Round score: %d points.\n", jackpotScore);
+	printf("Main Round Score: %d points\n", mainRoundScore);
+
+
+    // Option to go back to the main menu
+    printf("\n1] Go back to main menu\n");
+    int choice;
+    printf("Select an option [1]: ");
+    scanf("%d", &choice);
+
+    if (choice == 1) {
+		return 0;
+    } else {
+        printf("\nInvalid choice. Returning to the main menu...\n");
+        return 0;
     }
 
     return jackpotScore;
 }
 
+
+
+// MENU
 int main() {
     char choice;
 
@@ -290,7 +334,7 @@ int main() {
         printf("H] How to Play\n");
         printf("P] Play Game\n");
         printf("Q] Quit\n");
-        printf("\nSelect an option (H, P, Q): ");
+        printf("\nSelect an option [H, P, Q]: ");
         scanf(" %c", &choice);
 
         switch (choice) {
