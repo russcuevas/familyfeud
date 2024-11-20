@@ -3,6 +3,10 @@
 #include <string.h>
 #include <ctype.h>
 
+#define NUM_QUESTIONS 8
+#define NUM_ANSWERS 15
+#define NUM_CHOICES 4
+
 // Declaration
 int playRound(int mode);
 void displayHowToPlay();
@@ -10,12 +14,52 @@ void playGame();
 void normalizeString(char *str);
 int jackpotRound();
 
-// Structure to store question data
+// Define a Question struct
 typedef struct {
     char question[200];
-    char answers[15][50];   // 10 answers per question
-    int points[15];         // Points for each answer
+    char answers[NUM_ANSWERS][50];
+    int points[NUM_ANSWERS];
 } Question;
+
+void shuffleArray(char arr[][50], int size) {
+    int i, j;  // Declare i and j only once here
+    for (i = size - 1; i > 0; i--) {  // Use the outer 'i' variable in the loop
+        j = rand() % (i + 1);  // Random index to swap
+        char temp[50];
+        strcpy(temp, arr[i]);
+        strcpy(arr[i], arr[j]);
+        strcpy(arr[j], temp);
+    }
+}
+
+// Function to shuffle the questions array
+void shuffleQuestions(Question questions[], int size) {
+    int i, j;  // Declare i and j only once here
+    for (i = size - 1; i > 0; i--) { 
+        j = rand() % (i + 1);  // Random index to swap
+        Question temp = questions[i];
+        questions[i] = questions[j];
+        questions[j] = temp;
+    }
+}
+
+// Function to shufflt answer with its corresponding points
+void shuffleAnswersAndPoints(char answers[][50], int points[], int size) {
+    int i, j;
+    for (i = size - 1; i > 0; i--) {
+        j = rand() % (i + 1);  // Random index to swap
+        // Swap answers
+        char temp[50];
+        strcpy(temp, answers[i]);
+        strcpy(answers[i], answers[j]);
+        strcpy(answers[j], temp);
+        
+        // Swap points
+        int tempPoints = points[i];
+        points[i] = points[j];
+        points[j] = tempPoints;
+    }
+}
 
 // Function to display "How to Play" instructions
 void displayHowToPlay() {
@@ -115,6 +159,7 @@ void playGame() {
 
 // Function to play the main round
 int playOnePlayer(int mode) {
+    // Array of questions
     Question questions[] = {
         {"An article from CNN covered famous tourist destinations, What is the most famous tourist destination in the world?",
          {"Paris", "Amsterdam", "Japan", "Berlin", "Italy", "Los Angeles", "New York", "Singapore", "South Korea", "Ireland"},
@@ -153,24 +198,38 @@ int playOnePlayer(int mode) {
     char answer[50];
     int i, j, correct;
 
-    for (i = 0; i < 8; i++) {
+    // Seed the random number generator
+    srand(time(NULL));
+
+    // Shuffle the questions using the new NUM_QUESTIONS constant
+    shuffleQuestions(questions, NUM_QUESTIONS);
+
+    // Loop through the shuffled questions
+	for (i = 0; i < 5; i++) {  // We are now displaying only 5 questions
         printf("\nQUESTION #%d\n", i + 1);
         printf("%s\n", questions[i].question);
 
-        // Looping displaying the answer with no points
-        for (j = 0; j < 15 && questions[i].answers[j][0] != '\0'; j++) {
-            printf("%s\n", questions[i].answers[j]);
+        // Shuffle the answers and points together
+        shuffleAnswersAndPoints(questions[i].answers, questions[i].points, 15);
+
+        // Display the first 4 non-empty shuffled answers
+        int displayedAnswers = 0;
+        for (j = 0; j < 15 && displayedAnswers < 4; j++) {
+            if (questions[i].answers[j][0] != '\0') {  // Check if the answer is non-empty
+                printf("%d. %s\n", displayedAnswers + 1, questions[i].answers[j]);
+                displayedAnswers++;
+            }
         }
 
         printf("\nEnter your guess: ");
         
-        // Lowercase
+        // Normalize the input to lowercase
         fflush(stdin);
         fgets(answer, sizeof(answer), stdin);
-        answer[strcspn(answer, "\n")] = 0; 
+        answer[strcspn(answer, "\n")] = 0;  // Remove the newline character
         normalizeString(answer);
 
-        // Check for answers for the current question
+        // Check for correct answers
         correct = 0;
         for (j = 0; j < 15; j++) {
             char correctAnswer[50];
@@ -187,15 +246,15 @@ int playOnePlayer(int mode) {
         }
 
         if (!correct) {
-            printf("Wrong 0 points\n");
+            printf("Wrong! 0 points\n");
         }
     }
 
-    printf("\nTotal score for this round: %d points.", totalScore);
+    printf("\nTotal score for this round: %d points.\n", totalScore);
     return totalScore;
 }
 
-
+//Function to play two player
 int playTwoPlayer() {
     Question questions[] = {
         {"An article from CNN covered famous tourist destinations, What is the most famous tourist destination in the world?",
@@ -219,8 +278,8 @@ int playTwoPlayer() {
          {100, 100, 75, 75, 55, 55, 55, 35, 35}},
          
         {"Most common baby names in the Philippines?",
-         {"Karlo", "Angela", "Sophia", "Miguel", "Nathan", "Andrea", "Princess", "Angela", "Sam", "Alex"},
-         {100, 75, 75, 65, 55, 45, 35, 35, 25, 25}},
+         {"Karlo", "Angela", "Sophia", "Miguel", "Nathan", "Andrea", "Princess", "Sam", "Alex"},
+         {100, 75, 75, 65, 55, 45, 35, 35, 25}},
          
         {"Most used instrument in the world?",
          {"Piano", "Guitar", "Violin", "Drums", "Saxophone", "Trumpet", "Clarinet", "Harp"},
@@ -236,15 +295,28 @@ int playTwoPlayer() {
     char answer[50];
     int i, j, correct;
     char player1Answer[50] = ""; // To store Player 1's answer
+    
+    // Seed the random number generator
+    srand(time(NULL));
 
-    for (i = 0; i < 8; i++) {
+    // Shuffle the questions
+    shuffleQuestions(questions, 8);
+
+	for (i = 0; i < 5; i++) {
         printf("\nQUESTION #%d\n", i + 1);
         printf("%s\n", questions[i].question);
 
-        // Display the possible answers
-        for (j = 0; j < 15 && questions[i].answers[j][0] != '\0'; j++) {
-            printf("%s\n", questions[i].answers[j]);
-        }
+        // Shuffle the answers and points for the current question
+        shuffleAnswersAndPoints(questions[i].answers, questions[i].points, 10);  // Shuffle the answers (size = 10)
+
+		// Display the first 4 non-empty shuffled answers
+		int displayedAnswers = 0;
+		for (j = 0; j < 10 && displayedAnswers < 4; j++) {
+		    if (questions[i].answers[j][0] != '\0') { 
+		        printf("%d. %s\n", displayedAnswers + 1, questions[i].answers[j]);
+		        displayedAnswers++;
+		    }
+		}
 
         // Player 1's turn
         printf("\nPlayer 1, enter your guess: ");
@@ -254,7 +326,7 @@ int playTwoPlayer() {
         normalizeString(answer); // Normalize the answer (remove spaces, make lowercase)
 
         correct = 0;
-        for (j = 0; j < 15; j++) {
+        for (j = 0; j < 4; j++) {
             char correctAnswer[50];
             strcpy(correctAnswer, questions[i].answers[j]);
             normalizeString(correctAnswer);
@@ -287,7 +359,7 @@ int playTwoPlayer() {
             } else {
                 // Check if the answer is correct
                 correct = 0;
-                for (j = 0; j < 15; j++) {
+                for (j = 0; j < 4; j++) {
                     char correctAnswer[50];
                     strcpy(correctAnswer, questions[i].answers[j]);
                     normalizeString(correctAnswer);
@@ -377,12 +449,6 @@ int playTwoPlayer() {
 }
 
 
-
-
-
-
-
-
 // Jackpot Round Function
 int jackpotRound(int mainRoundScore) {
 	printf("\n-- JACKPOT ROUND --\n");
@@ -396,7 +462,7 @@ int jackpotRound(int mainRoundScore) {
          {"August", "September", "October", "June", "December", "March", "November", "April"},
          {75, 70, 55, 45, 45, 35, 35, 35}},
         
-        {"What’s the most common color used for cars?", 
+        {"Whats the most common color used for cars?", 
          {"White", "Black", "Gray", "Blue", "Silver", "Red", "Green", "Beige"},
          {75, 50, 45, 45, 40, 40, 35, 25}},
          
@@ -425,12 +491,26 @@ int jackpotRound(int mainRoundScore) {
     char answer[50];
     int i, j, correct;
 
-    for (i = 0; i < 8; i++) {
+    // Seed the random number generator
+    srand(time(NULL));
+
+    // Shuffle the questions
+    shuffleQuestions(jackpotQuestions, 8);
+    
+   for (i = 0; i < 5; i++) {
         printf("\nJACKPOT QUESTION #%d\n", i + 1);
         printf("%s\n", jackpotQuestions[i].question);
         
-        for (j = 0; j < 11 && jackpotQuestions[i].answers[j][0] != '\0'; j++) {
-            printf("%s\n", jackpotQuestions[i].answers[j]);
+        // Shuffle the answers and points for the current question
+        shuffleAnswersAndPoints(jackpotQuestions[i].answers, jackpotQuestions[i].points, 11);
+
+        // Display the first 4 non-empty shuffled answers
+        int displayedAnswers = 0;
+        for (j = 0; j < 11 && displayedAnswers < 4; j++) {
+            if (jackpotQuestions[i].answers[j][0] != '\0') {  // Check if the answer is non-empty
+                printf("%d. %s\n", displayedAnswers + 1, jackpotQuestions[i].answers[j]);
+                displayedAnswers++;
+            }
         }
 
         printf("\nEnter your guess: ");
